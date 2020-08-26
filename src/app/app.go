@@ -26,7 +26,7 @@ func PostHandle(queue chan Job) echo.HandlerFunc {
 			log.Print(err)
 			return err
 		}
-		message.UserId = message.UserId + rand.Int31()
+		message.MessageId = message.MessageId + rand.Int31()
 		queue <- Job{Payload: *message}
 		return c.JSON(http.StatusCreated, nil)
 	}

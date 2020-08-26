@@ -1,6 +1,6 @@
 {
-  "user_id": 1,
-  "channel_id": 1,
-  "body": "this is test text",
+  "messageId": 1,
+  "body": "This is test",
+  "displayName": "test user",
   "type": "txt"
 }

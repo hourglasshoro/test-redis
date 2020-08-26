@@ -7,9 +7,9 @@ import (
 )
 
 type Payload struct {
-	UserId      int32  `json:"user_id"`
-	ChannelId   int32  `json:"channel_id"`
+	MessageId   int32  `json:"messageId"`
 	Body        string `json:"body"`
+	DisplayName string `json:"displayName"`
 	MessageType string `json:"type"`
 }
 
@@ -65,8 +65,9 @@ func (w Worker) Start() {
 				},
 			)
 
+			log.Print(len(batchJob))
 			for _, job := range batchJob {
-				pipe.Set(ctx, strconv.Itoa(int(job.Payload.UserId)), job.Payload.Body, 0)
+				pipe.HMSet(ctx, strconv.Itoa(int(job.Payload.MessageId)), "body", job.Payload.Body, "displayName", job.Payload.DisplayName, "type", job.Payload.MessageType)
 			}
 			_, err = pipe.Exec(ctx)
 			if err != nil {
