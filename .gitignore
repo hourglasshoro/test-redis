@@ -1,0 +1,5 @@
+.idea
+/.env
+/database/data/
+/minio/config/
+/minio/data/
