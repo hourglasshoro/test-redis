@@ -8,10 +8,12 @@ import (
 )
 
 type Payload struct {
-	MessageId   int32  `json:"messageId"`
+	MessageId   int    `json:"messageId"`
 	Body        string `json:"body"`
 	DisplayName string `json:"displayName"`
 	MessageType string `json:"type"`
+	UserId      int
+	ChannelId   int
 }
 
 type Job struct {
@@ -78,6 +80,8 @@ func (w Worker) Start() {
 					"displayName", job.Payload.DisplayName,
 					"type", job.Payload.MessageType,
 					"createdAt", now,
+					"userId", job.Payload.UserId,
+					"channelId", job.Payload.ChannelId,
 				).Err()
 				if err != nil {
 					log.Print(err)

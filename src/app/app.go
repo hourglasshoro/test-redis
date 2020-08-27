@@ -11,6 +11,7 @@ import (
 
 const MaxQueue = 20000
 const BatchJobWaitTime = 1000 * time.Millisecond
+const MigrateWaitTime = 10 * time.Second
 
 func main() {
 
@@ -24,7 +25,10 @@ func main() {
 	worker := NewWorker(JobQueue)
 	worker.Start()
 
-	messageId := int32(0)
+	migrate := NewMigrateWorker()
+	migrate.Start()
+
+	messageId := 0
 
 	e := echo.New()
 
@@ -59,7 +63,7 @@ func GetMessages() echo.HandlerFunc {
 	}
 }
 
-func PostMessages(queue chan Job, id int32) echo.HandlerFunc {
+func PostMessages(queue chan Job, id int) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		message := new(Payload)
 		if err := c.Bind(message); err != nil {
@@ -67,6 +71,11 @@ func PostMessages(queue chan Job, id int32) echo.HandlerFunc {
 			return err
 		}
 		message.MessageId = id
+
+		// JWTかcacheを確認する処理の代わり
+		message.UserId = 1
+		message.ChannelId = 1
+
 		id++
 		queue <- Job{Payload: *message}
 		return c.JSON(http.StatusCreated, nil)

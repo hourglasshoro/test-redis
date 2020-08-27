@@ -19,7 +19,7 @@ func (ctrl *MessageController) GetAll() (res []map[string]string, err error) {
 		return
 	}
 	now := time.Now().UnixNano()
-	messages, err := redisInst.ZRevRangeByScore(
+	messageIds, err := redisInst.ZRevRangeByScore(
 		ctx,
 		"messages/createdAt",
 		&redis.ZRangeBy{
@@ -29,11 +29,14 @@ func (ctrl *MessageController) GetAll() (res []map[string]string, err error) {
 	).Result()
 
 	//HACK: redisに毎回アクセスしているのでsqlのinみたいにkeyを絞り込みたいが今のところやり方不明
-	for _, message := range messages {
-		val, err := redisInst.HGetAll(ctx, message).Result()
+	for _, messageId := range messageIds {
+		val, err := redisInst.HGetAll(ctx, messageId).Result()
 		if err != nil {
 			break
 		}
+		delete(val, "userId")
+		delete(val, "channelId")
+
 		res = append(res, val)
 	}
 	return
