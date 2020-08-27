@@ -21,7 +21,7 @@ func (ctrl *MessageController) GetAll() (res []map[string]string, err error) {
 	now := time.Now().UnixNano()
 	messages, err := redisInst.ZRevRangeByScore(
 		ctx,
-		"createdAt",
+		"messages/createdAt",
 		&redis.ZRangeBy{
 			Min:   "0",
 			Max:   strconv.Itoa(int(now)),

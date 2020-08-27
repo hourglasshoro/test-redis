@@ -9,7 +9,7 @@ import (
 )
 
 const MaxQueue = 20000
-const BatchJobWaitTime = 10000 * time.Millisecond
+const BatchJobWaitTime = 1000 * time.Millisecond
 
 func main() {
 

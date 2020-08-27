@@ -66,17 +66,18 @@ func (w Worker) Start() {
 					}
 				},
 			)
-			log.Print(counter)
 
 			for i := 0; i < counter; i++ {
 				job := <-batchJobChannel
 				key := fmt.Sprintf("message:%d", int(job.Payload.MessageId))
+				now := time.Now().UnixNano()
 				err := pipe.HMSet(
 					ctx,
 					key,
 					"body", job.Payload.Body,
 					"displayName", job.Payload.DisplayName,
 					"type", job.Payload.MessageType,
+					"createdAt", now,
 				).Err()
 				if err != nil {
 					log.Print(err)
@@ -84,9 +85,9 @@ func (w Worker) Start() {
 
 				err = pipe.ZAdd(
 					ctx,
-					"createdAt",
+					"messages/createdAt",
 					&redis.Z{
-						Score:  float64(time.Now().UnixNano()),
+						Score:  float64(now),
 						Member: key,
 					},
 				).Err()
