@@ -3,48 +3,84 @@ package main
 import (
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
-	"math/rand"
 	"net/http"
+	"strconv"
+	"time"
 )
 
-func MainPage() echo.HandlerFunc {
+const MaxQueue = 20000
+const BatchJobWaitTime = 10000 * time.Millisecond
+
+func main() {
+
+	JobQueue := make(chan Job, MaxQueue)
+
+	worker := NewWorker(JobQueue)
+	worker.Start()
+
+	messageId := int32(0)
+
+	e := echo.New()
+
+	e.GET("/", GetIndex())
+	e.GET("/messages", GetMessages())
+	e.GET("/messages/:id", GetMessageDetail())
+	e.POST("/messages", PostMessages(JobQueue, messageId))
+
+	e.Start(":8000")
+}
+
+func GetIndex() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello World")
+		totalNum, err := GetTotalNum()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+
+		return c.JSON(http.StatusOK, map[string]int64{
+			"totalNum": totalNum,
+		})
 	}
 }
 
-func GetPage() echo.HandlerFunc {
+func GetMessages() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return c.String(http.StatusOK, "Message page")
+		ctrl := MessageController{}
+		res, err := ctrl.GetAll()
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, res)
 	}
 }
 
-func PostHandle(queue chan Job) echo.HandlerFunc {
+func PostMessages(queue chan Job, id int32) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		message := new(Payload)
 		if err := c.Bind(message); err != nil {
 			log.Print(err)
 			return err
 		}
-		message.MessageId = message.MessageId + rand.Int31()
+		message.MessageId = id
+		id++
 		queue <- Job{Payload: *message}
 		return c.JSON(http.StatusCreated, nil)
 	}
-
 }
 
-func main() {
+func GetMessageDetail() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
 
-	JobQueue := make(chan Job)
+		ctrl := MessageController{}
+		res, err := ctrl.GetById(id)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
 
-	worker := NewWorker(JobQueue)
-	worker.Start()
-
-	e := echo.New()
-
-	e.GET("/", MainPage())
-	e.GET("/message", GetPage())
-	e.POST("/message", PostHandle(JobQueue))
-
-	e.Start(":8000")
+		return c.JSON(http.StatusOK, res)
+	}
 }
