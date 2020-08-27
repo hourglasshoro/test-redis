@@ -4,3 +4,5 @@
 /minio/config/
 /minio/data/
 /src/app/.env
+/mysql/data/
+/mysql/log/

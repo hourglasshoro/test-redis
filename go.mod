@@ -5,8 +5,10 @@ go 1.14
 replace gopkg.in/urfave/cli.v2 => github.com/urfave/cli/v2 v2.2.0
 
 require (
+	github.com/bamzi/jobrunner v1.0.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/go-redis/redis/v8 v8.0.0-beta.8 // indirect
+	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
 	github.com/labstack/echo v3.3.10+incompatible // indirect
 	github.com/labstack/gommon v0.3.0 // indirect

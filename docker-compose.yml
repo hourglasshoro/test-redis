@@ -14,19 +14,25 @@ services:
       - 8000:8000
     depends_on:
       - redis
-  #      - db
+      - db
 
-  #  db:
-  #    image: mysql:5.7
-  #    restart: always
-  #    env_file:
-  #      - .env
-  #    ports:
-  #      - 3306:3306
-  #    volumes:
-  #      - ./database/data:/var/lib/mysql
-  #      - ./database/initdb:/docker-entrypoint-initdb.d
-  #    command: mysqld --character-set-server=utf8 --collation-server=utf8_unicode_ci
+  db:
+    build:
+      context: .
+      dockerfile: docker/db/Dockerfile
+    #    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - ./mysql/initdb:/docker-entrypoint-initdb.d
+      - ./mysql/conf/my.cnf:/etc/mysql/my.cnf
+      - ./mysql/log/slow.log:/var/log/mysql/slow.log
+    env_file:
+      - ./src/app/.env
+    command: --character-set-server=utf8 --collation-server=utf8_unicode_ci --user=mysql
+    security_opt:
+      - seccomp:unconfined
 
   redis:
     image: redis:latest
