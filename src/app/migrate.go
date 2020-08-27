@@ -47,7 +47,7 @@ func (m *Migrate) Run() {
 	now := time.Now().UnixNano()
 
 	// LastRunから現在までのmessageのIdを取得
-	messageIds, err := redisInst.ZRevRangeByScore(
+	messageIds, err := redisInst.ZRangeByScore(
 		ctx,
 		"messages/createdAt",
 		&redis.ZRangeBy{
