@@ -12,12 +12,6 @@ import (
 type MessageController struct {
 }
 
-type MessageResponse struct {
-	body        string
-	displayName string
-	messageType string
-}
-
 // redisから最新100件のメッセージを取得
 func (ctrl *MessageController) GetAll() (res []map[string]string, err error) {
 	redisInst, err := NewRedis()
