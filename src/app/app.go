@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
 	"net/http"
@@ -12,6 +13,11 @@ const MaxQueue = 20000
 const BatchJobWaitTime = 1000 * time.Millisecond
 
 func main() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Print(err)
+	}
 
 	JobQueue := make(chan Job, MaxQueue)
 
@@ -26,7 +32,6 @@ func main() {
 	e.GET("/messages", GetMessages())
 	e.GET("/messages/:id", GetMessageDetail())
 	e.POST("/messages", PostMessages(JobQueue, messageId))
-
 	e.Start(":8000")
 }
 

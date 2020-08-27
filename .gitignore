@@ -3,3 +3,4 @@
 /database/data/
 /minio/config/
 /minio/data/
+/src/app/.env

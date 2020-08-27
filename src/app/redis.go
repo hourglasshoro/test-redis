@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-redis/redis/v8"
+	"os"
 )
 
 var ctx = context.Background()
 
 func NewRedis() (*redis.Client, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "redis:6379",
+		Addr:     fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
 		Password: "",
 		DB:       0,
 	})
