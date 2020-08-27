@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
+	"github.com/go-redis/redis/v8"
 	"github.com/labstack/gommon/log"
-	"strconv"
 	"time"
 )
 
 type Payload struct {
-	UserId      int32  `json:"user_id"`
-	ChannelId   int32  `json:"channel_id"`
+	MessageId   int32  `json:"messageId"`
 	Body        string `json:"body"`
+	DisplayName string `json:"displayName"`
 	MessageType string `json:"type"`
 }
 
@@ -51,24 +52,51 @@ func (w Worker) Start() {
 	go func() {
 		for {
 
-			//var duration = 1 * time.Second
-			var batchJob []Job
+			batchJobChannel := make(chan Job, MaxQueue)
+			counter := 0
 
-			DuringFunc(1000*time.Millisecond,
+			DuringFunc(BatchJobWaitTime,
 				func() {
 					select {
 					case job := <-w.JobQueue:
-						batchJob = append(batchJob, job)
+						batchJobChannel <- job
+						counter++
 					case <-w.quit:
 						return
 					}
 				},
 			)
+			log.Print(counter)
 
-			for _, job := range batchJob {
-				pipe.Set(ctx, strconv.Itoa(int(job.Payload.UserId)), job.Payload.Body, 0)
+			for i := 0; i < counter; i++ {
+				job := <-batchJobChannel
+				key := fmt.Sprintf("message:%d", int(job.Payload.MessageId))
+				err := pipe.HMSet(
+					ctx,
+					key,
+					"body", job.Payload.Body,
+					"displayName", job.Payload.DisplayName,
+					"type", job.Payload.MessageType,
+				).Err()
+				if err != nil {
+					log.Print(err)
+				}
+
+				err = pipe.ZAdd(
+					ctx,
+					"createdAt",
+					&redis.Z{
+						Score:  float64(time.Now().UnixNano()),
+						Member: key,
+					},
+				).Err()
+
+				if err != nil {
+					log.Print(err)
+				}
 			}
-			_, err = pipe.Exec(ctx)
+
+			_, err := pipe.Exec(ctx)
 			if err != nil {
 				log.Print(err)
 				break
