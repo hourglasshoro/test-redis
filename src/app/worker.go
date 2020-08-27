@@ -32,17 +32,6 @@ func NewWorker(queue chan Job) Worker {
 	}
 }
 
-func DuringFunc(d time.Duration, f func()) {
-	flg := true
-	go func() {
-		for flg {
-			f()
-		}
-	}()
-	time.Sleep(d)
-	flg = false
-}
-
 func (w Worker) Start() {
 	redisInst, err := NewRedis()
 	if err != nil {
@@ -57,17 +46,16 @@ func (w Worker) Start() {
 			batchJobChannel := make(chan Job, MaxQueue)
 			counter := 0
 
-			DuringFunc(BatchJobWaitTime,
-				func() {
-					select {
-					case job := <-w.JobQueue:
-						batchJobChannel <- job
-						counter++
-					case <-w.quit:
-						return
-					}
-				},
-			)
+			flg := true
+			go func() {
+				for flg || !<-w.quit {
+					job := <-w.JobQueue
+					batchJobChannel <- job
+					counter++
+				}
+			}()
+			time.Sleep(BatchJobWaitTime)
+			flg = false
 
 			for i := 0; i < counter; i++ {
 				job := <-batchJobChannel
