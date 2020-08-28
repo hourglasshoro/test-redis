@@ -1,6 +1,5 @@
 {
   "body": "This is test",
   "displayName": "test user",
-  "type": "txt",
-  "channelId": 1
+  "type": "txt"
 }

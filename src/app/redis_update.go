@@ -14,7 +14,7 @@ type Payload struct {
 	Body        string `json:"body"`
 	DisplayName string `json:"displayName"`
 	MessageType string `json:"type"`
-	ChannelId   int    `json:"channelId"`
+	ChannelId   int
 	UserId      int
 }
 

@@ -40,9 +40,9 @@ func main() {
 	e := echo.New()
 
 	e.GET("/", GetIndex(redisInst))
-	e.GET("/channel/:id/messages", GetMessages(messageController))
+	e.GET("/channels/:id/messages", GetMessages(messageController))
+	e.POST("/channels/:id/messages", PostMessages(JobQueue))
 	e.GET("/messages/:id", GetMessageDetail(messageController))
-	e.POST("/messages", PostMessages(JobQueue))
 	e.Start(":8000")
 }
 
@@ -75,12 +75,17 @@ func GetMessages(ctrl MessageController) echo.HandlerFunc {
 
 func PostMessages(queue chan Job) echo.HandlerFunc {
 	return func(c echo.Context) error {
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
 		message := new(Payload)
 		if err := c.Bind(message); err != nil {
 			log.Print(err)
 			return err
 		}
 		message.MessageId = uuid.New()
+		message.ChannelId = id
 
 		// JWT解凍する処理の代わり
 		message.UserId = 1
