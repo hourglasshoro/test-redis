@@ -14,5 +14,12 @@ func NewMysql() (db *sql.DB, err error) {
 		os.Getenv("MYSQL_DATABASE"),
 	)
 	db, err = sql.Open("mysql", dsn)
+
+	//if err != nil {
+	//	return nil, err
+	//}
+	//db.SetConnMaxLifetime(10 * time.Second)
+	//db.SetMaxIdleConns(512)
+	//db.SetMaxOpenConns(512)
 	return
 }
