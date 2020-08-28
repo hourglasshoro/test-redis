@@ -44,6 +44,7 @@ func (w *RedisUpdateWorker) Start() {
 			// ループ毎にbatchJobChannelに保存されたバッチ化された複数個のJobを取り出す
 			go func(batchJob chan Job) {
 				// 複数あるJobを並行で変換してredisのpipelineに保存
+				defer close(batchJob)
 				for {
 					job := <-batchJob
 					key := fmt.Sprintf("message:%s", job.Payload.MessageId)
