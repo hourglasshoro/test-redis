@@ -12,15 +12,18 @@ import (
 )
 
 type MigrationWorker struct {
+	Migrate Migrate
 }
 
-func NewMigrateWorker() MigrationWorker {
-	return MigrationWorker{}
+func NewMigrateWorker() *MigrationWorker {
+	return &MigrationWorker{
+		Migrate: *NewMigrate(),
+	}
 }
 
 func (w *MigrationWorker) Start() {
 	jobrunner.Start()
-	jobrunner.Every(MigrateWaitTime, NewMigrate())
+	jobrunner.Every(MigrateWaitTime, &w.Migrate)
 }
 
 func NewMigrate() *Migrate {
@@ -58,7 +61,7 @@ func (m *Migrate) Run() {
 
 	// あとからをvaluesを追加するバルクインサート用のクエリ
 	query := `
-INSERT INTO messages (body, user_id, channel_id, type, created_at)
+INSERT INTO messages (body, user_id, channel_id, redis_id, type, created_at)
 VALUES
 `
 	var values []string
@@ -87,6 +90,7 @@ VALUES
 			log.Print(err)
 			break
 		}
+		redisId := strings.Replace(messageId, "message:", "", 1)
 		messageType, ok := val["type"]
 		if !ok {
 			err = errors.New("the type key does not exist")
@@ -99,16 +103,15 @@ VALUES
 			log.Print(err)
 			break
 		}
-		createdAtInt, err := strconv.Atoi(createdAt)
-		createdAtTime := time.Unix(int64(createdAtInt/1e9), 0)
 
 		value := fmt.Sprintf(
-			"('%s', %s, %s, '%s', '%s')",
+			"('%s', %s, %s, '%s', '%s', '%s')",
 			body,
 			userId,
 			channelId,
+			redisId,
 			messageType,
-			createdAtTime.Format("2006-01-02 15:04:05"),
+			createdAt,
 		)
 		values = append(values, value)
 	}

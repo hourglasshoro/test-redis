@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
 	"github.com/labstack/gommon/log"
@@ -11,7 +12,7 @@ import (
 
 const MaxQueue = 20000
 const BatchJobWaitTime = 1000 * time.Millisecond
-const MigrateWaitTime = 10 * time.Second
+const MigrateWaitTime = 5 * time.Second
 
 func main() {
 
@@ -20,22 +21,27 @@ func main() {
 		log.Print(err)
 	}
 
+	redisInst, err := NewRedis()
+	if err != nil {
+		log.Print(err)
+	}
+
+	messageController := *NewMessageController(redisInst)
+
 	JobQueue := make(chan Job, MaxQueue)
 
-	worker := NewWorker(JobQueue)
-	worker.Start()
+	redisUpdate := NewRedisUpdateWorker(redisInst, JobQueue)
+	redisUpdate.Start()
 
 	migrate := NewMigrateWorker()
 	migrate.Start()
 
-	messageId := 0
-
 	e := echo.New()
 
 	e.GET("/", GetIndex())
-	e.GET("/messages", GetMessages())
-	e.GET("/messages/:id", GetMessageDetail())
-	e.POST("/messages", PostMessages(JobQueue, messageId))
+	e.GET("/channel/:id/messages", GetMessages(messageController))
+	e.GET("/messages/:id", GetMessageDetail(messageController))
+	e.POST("/messages", PostMessages(JobQueue))
 	e.Start(":8000")
 }
 
@@ -52,10 +58,13 @@ func GetIndex() echo.HandlerFunc {
 	}
 }
 
-func GetMessages() echo.HandlerFunc {
+func GetMessages(ctrl MessageController) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		ctrl := MessageController{}
-		res, err := ctrl.GetAll()
+		id, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		res, err := ctrl.GetAll(id)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -63,33 +72,30 @@ func GetMessages() echo.HandlerFunc {
 	}
 }
 
-func PostMessages(queue chan Job, id int) echo.HandlerFunc {
+func PostMessages(queue chan Job) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		message := new(Payload)
 		if err := c.Bind(message); err != nil {
 			log.Print(err)
 			return err
 		}
-		message.MessageId = id
+		message.MessageId = uuid.New()
 
-		// JWTかcacheを確認する処理の代わり
+		// JWT解凍する処理の代わり
 		message.UserId = 1
-		message.ChannelId = 1
 
-		id++
 		queue <- Job{Payload: *message}
 		return c.JSON(http.StatusCreated, nil)
 	}
 }
 
-func GetMessageDetail() echo.HandlerFunc {
+func GetMessageDetail(ctrl MessageController) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 
-		ctrl := MessageController{}
 		res, err := ctrl.GetById(id)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
