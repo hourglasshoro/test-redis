@@ -1,10 +1,8 @@
 package main
 
-func GetTotalNum() (res int64, err error) {
-	redisInst, err := NewRedis()
-	if err != nil {
-		return
-	}
-	res, err = redisInst.DBSize(ctx).Result()
+import "github.com/go-redis/redis/v8"
+
+func GetTotalNum(redis *redis.Client) (res int64, err error) {
+	res, err = redis.DBSize(ctx).Result()
 	return
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo"
@@ -38,16 +39,16 @@ func main() {
 
 	e := echo.New()
 
-	e.GET("/", GetIndex())
+	e.GET("/", GetIndex(redisInst))
 	e.GET("/channel/:id/messages", GetMessages(messageController))
 	e.GET("/messages/:id", GetMessageDetail(messageController))
 	e.POST("/messages", PostMessages(JobQueue))
 	e.Start(":8000")
 }
 
-func GetIndex() echo.HandlerFunc {
+func GetIndex(redis *redis.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		totalNum, err := GetTotalNum()
+		totalNum, err := GetTotalNum(redis)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}

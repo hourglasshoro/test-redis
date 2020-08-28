@@ -83,12 +83,8 @@ func (ctrl *MessageController) GetAll(channelId int) (res []map[string]string, e
 }
 
 func (ctrl *MessageController) GetById(id int) (res map[string]string, err error) {
-	redisInst, err := NewRedis()
-	if err != nil {
-		return
-	}
 	key := fmt.Sprintf("message:%d", id)
-	res, err = redisInst.HGetAll(ctx, key).Result()
+	res, err = ctrl.Redis.HGetAll(ctx, key).Result()
 	if reflect.DeepEqual(res, map[string]string{}) {
 		err = errors.New("no such a message")
 	}
